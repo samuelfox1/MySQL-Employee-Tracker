@@ -14,28 +14,28 @@ var connection = mysql.createConnection({
 connection.connect(function (err) {
     if (err) throw err;
     // run the start function after the connection is made to prompt the user
+    console.log('\n====== WELCOME!===========================================')
     home();
 });
 
 
 function home() {
     console.log('\n========================== HOME ==========================\n')
+    console.log(`!! IMPORTANT !!\n\nSTART by adding all departments\nTHEN add all employee role's\nEND with adding employees\n`)
     inquirer
-        .prompt([
-            {
-                type: "list",
-                message: "What would you like to add?",
-                choices: ['Add Employee', 'Add Role', 'Add Department', 'QUIT'],
-                name: 'choice'
-            }
-        ]).then(({ choice }) => {
+        .prompt([{
+            type: "list",
+            message: "What would you like to do?",
+            choices: ['Add Department', 'Add Role', 'Add Employee', 'QUIT'],
+            name: 'choice'
+        }]).then(({ choice }) => {
             switch (choice) {
-                case 'Add Employee':
-                    return addEmployee();
-                case 'Add Role':
-                    return addRole();
                 case 'Add Department':
                     return addDepartment();
+                case 'Add Role':
+                    return addRole();
+                case 'Add Employee':
+                    return addEmployee();
                 default:
                     console.log('\n======================== GOODBYE =========================\n')
                     return connection.end();
@@ -45,14 +45,36 @@ function home() {
 }
 
 function addEmployee() {
-    console.log('\n======================== EMPLOYEE ========================\n')
+    console.log('\n======================== EMPLOYEE ========================')
     home()
 }
+
+
 function addRole() {
-    console.log('\n========================== ROLE ==========================\n')
-    home()
+    console.log('\n========================== ROLE ==========================')
+
 }
+
+
 function addDepartment() {
-    console.log('\n======================= DEPARTMENT =======================\n')
-    home()
+    console.log('\n======================= DEPARTMENT =======================')
+    inquirer
+        .prompt([
+            {
+                type: 'input',
+                message: 'Enter a department name: ',
+                name: 'departmentName'
+            }
+        ]).then(({ departmentName }) => {
+            connection.query(
+                'INSERT INTO department SET ?',
+                {
+                    name: departmentName
+                },
+                function (err) {
+                    if (err) throw err;
+                    console.log('Department created successfully!')
+                    home()
+                });
+        })
 }
