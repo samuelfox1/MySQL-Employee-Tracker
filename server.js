@@ -52,7 +52,52 @@ function addEmployee() {
 
 function addRole() {
     console.log('\n========================== ROLE ==========================')
+    connection.query("SELECT * FROM department", (err, results) => {
+        if (err) throw err;
 
+
+        inquirer
+            .prompt([
+                {
+                    type: 'input',
+                    message: 'Enter role title: ',
+                    name: 'title'
+                }, {
+                    type: 'input',
+                    message: 'Enter role salary( numbers only, no commas ): ',
+                    name: 'salary'
+                }, {
+                    type: 'list',
+                    message: 'Select a department: ',
+                    name: 'department',
+                    choices: () => {
+                        const choices = [];
+                        for (let i = 0; i < results.length; i++) {
+                            choices.push(results[i].name);
+                        }
+                        return choices;
+                    }
+                },
+            ]).then((x) => {
+                let dept;
+                for (let i = 0; i < results.length; i++) {
+                    if (results[i].name === x.department) { dept = results[i] }
+                }
+                connection.query(
+                    'INSERT INTO employeeRole SET ?',
+                    {
+                        title: x.title,
+                        salary: x.salary,
+                        department_id: dept.id,
+                        department_name: dept.name
+                    },
+                    function (err) {
+                        if (err) throw err;
+                        console.log('\nEmployee role created successfully!')
+                        home()
+                    });
+            })
+    });
 }
 
 
@@ -73,7 +118,7 @@ function addDepartment() {
                 },
                 function (err) {
                     if (err) throw err;
-                    console.log('Department created successfully!')
+                    console.log('\nDepartment created successfully!')
                     home()
                 });
         })
