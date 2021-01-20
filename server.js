@@ -24,14 +24,26 @@ function home() {
         .prompt([{
             type: 'list',
             message: 'What would you like to do?',
-            choices: ['Add departments, roles, employees', 'View departments, roles, employees', 'QUIT'],
+            choices: ['View All Employees', 'View All Departments', 'View Employee Roles', 'Add Employee', 'Add Departments', 'Add Employee Role', 'QUIT'],
             name: 'x'
         }]).then(({ x }) => {
             switch (x) {
-                case 'Add departments, roles, employees':
-                    return addData();
-                case 'View departments, roles, employees':
-                    return viewData();
+                case 'View All Employees':
+                    return viewEmployee();
+                case 'View All Departments':
+                    return viewDepartment();
+                case 'View Employee Roles':
+                    return viewRole();
+                case 'Add Employee':
+                    return addEmployee();
+                case 'Add Departments':
+                    return addDepartment()
+                case 'Add Employee Role':
+                    return addRole();
+                // case '':
+                //     return
+                // case '':
+                //     return
                 default:
                     console.log('\n------------------------ GOODBYE -------------------------\n')
                     return connection.end();
@@ -39,78 +51,18 @@ function home() {
         })
 }
 
-function addData() {
-    console.log('\n------------------------ ADD DATA ------------------------\n')
-    console.log(`!! IMPORTANT !!\n\nSTART by adding all departments\nTHEN add all employee role's\nEND with adding employees\n`)
-    inquirer
-        .prompt([{
-            type: "list",
-            message: "What would you like to add?",
-            choices: ['Department', 'Role', 'Employee', '<-- exit'],
-            name: 'choice'
-        }]).then(({ choice }) => {
-            switch (choice) {
-                case 'Department':
-                    return addDepartment();
-                case 'Role':
-                    return addRole();
-                case 'Employee':
-                    return addEmployee();
-                default:
-                    return home();
-            }
-        })
 
+function viewEmployee() {
+    console.log('\n--------------------- VIEW EMPLOYEES ---------------------')
+    connection.query("SELECT * FROM employee", (err, results) => {
+        if (err) throw err;
+        console.table(results)
+        home()
+    })
 }
-
-function viewData() {
-    console.log('\n----------------------- VIEW DATA ------------------------\n')
-    inquirer
-        .prompt([{
-            type: 'list',
-            message: 'What would you like to view?',
-            choices: ['Departments', 'Roles', 'Employees', '<-- exit'],
-            name: 'x'
-        }]).then(({ x }) => {
-            switch (x) {
-                case 'Departments':
-                    return viewDepartments();
-                case 'Roles':
-                    return viewRoles();
-                case 'Employees':
-                    return viewEmployees();
-                default:
-                    return home();
-            }
-        })
-}
-
-
-function addDepartment() {
-    console.log('\n--------------------- ADD DEPARTMENT ---------------------')
-    inquirer
-        .prompt([
-            {
-                type: 'input',
-                message: 'Enter a department name: ',
-                name: 'departmentName'
-            }
-        ]).then(({ departmentName }) => {
-            connection.query(
-                'INSERT INTO department SET ?',
-                {
-                    name: departmentName
-                },
-                function (err) {
-                    if (err) throw err;
-                    console.log('\nDepartment created successfully!')
-                    home()
-                });
-        })
-}
-function viewDepartments() {
-    console.log('\n-------------------- VIEW DEPARTMENTS --------------------')
-    viewData()
+function addEmployee() {
+    console.log('\n---------------------- ADD EMPLOYEE ----------------------')
+    home()
 }
 
 
@@ -118,8 +70,6 @@ function addRole() {
     console.log('\n--------------------- ADD ROLE ------------------------')
     connection.query("SELECT * FROM department", (err, results) => {
         if (err) throw err;
-
-
         inquirer
             .prompt([
                 {
@@ -163,17 +113,45 @@ function addRole() {
             })
     });
 }
-function viewRoles() {
+function viewRole() {
     console.log('\n----------------------- VIEW ROLES -----------------------')
-    viewData()
+    connection.query("SELECT * FROM employeeRole", (err, results) => {
+        if (err) throw err;
+        console.table(results)
+        home()
+    })
 }
 
 
-function addEmployee() {
-    console.log('\n---------------------- ADD EMPLOYEE ----------------------')
-    home()
+function addDepartment() {
+    console.log('\n--------------------- ADD DEPARTMENT ---------------------')
+    inquirer
+        .prompt([
+            {
+                type: 'input',
+                message: 'Enter a department name: ',
+                name: 'departmentName'
+            }
+        ]).then(({ departmentName }) => {
+            connection.query(
+                'INSERT INTO department SET ?',
+                {
+                    name: departmentName
+                },
+                function (err) {
+                    if (err) throw err;
+                    console.log('\nDepartment created successfully!')
+                    home()
+                });
+        })
 }
-function viewEmployees() {
-    console.log('\n--------------------- VIEW EMPLOYEES ---------------------')
-    viewData()
+function viewDepartment() {
+    console.log('\n-------------------- VIEW DEPARTMENTS --------------------')
+    connection.query("SELECT * FROM department", (err, results) => {
+        if (err) throw err;
+        console.table(results)
+        home()
+    })
 }
+
+

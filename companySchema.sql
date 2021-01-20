@@ -26,4 +26,10 @@ CREATE TABLE department(
 );
 
 INSERT INTO department (name) 
-VALUES ('Product Development'),('Marketing'),('HR');
+VALUES ('Engineering'),('Sales'),('Legal'),('Finance');
+
+INSERT INTO employeeRole (title, salary, department_id, department_name)
+VALUES ('Manager', '150000', 0, ''),('Lead Engineer', 150000,1,'Engineering'),('Salesperson',80000,2,'Sales'),('Software Engineer',120000,1,'Engineering'),('Accountant',125000,4,'Finance'),('Lawyer',190000,3,'Legal');
+
+INSERT INTO employee (first_name, last_name, role_id, manager_id)
+VALUES ('John', 'Doe', 3, 0),('Ashley', 'Rodriguez', 2, 0);
