@@ -1,6 +1,7 @@
 const inquirer = require('inquirer')
 const mysql = require('mysql')
 
+
 // create the connection information for the sql database
 var connection = mysql.createConnection({
     host: "localhost",
@@ -14,7 +15,7 @@ var connection = mysql.createConnection({
 connection.connect(function (err) {
     if (err) throw err;
     // run the start function after the connection is made to prompt the user
-    console.log('\n----------- WELCOME TO MySQL EMPLOYEE TRACKER! -----------')
+    console.log('\n----------- WELCOME TO MySQL EMPLOYEE TRACKER ------------')
     home();
 });
 
@@ -24,22 +25,22 @@ function home() {
         .prompt([{
             type: 'list',
             message: 'What would you like to do?',
-            choices: ['View All Employees', 'View All Departments', 'View Employee Roles', 'Add Employee', 'Add Departments', 'Add Employee Role', 'QUIT'],
+            choices: ['View/Edit Employees', 'View/Edit Departments', 'View Employee Roles', 'Add Employee', 'Add Departments', 'Add Employee Role', 'QUIT'],
             name: 'x'
         }]).then(({ x }) => {
             switch (x) {
-                case 'View All Employees':
-                    return viewEmployee();
-                case 'View All Departments':
-                    return viewDepartment();
+                case 'View/Edit Employees':
+                    return viewEmployees();
+                case 'View/Edit Departments':
+                    return viewDepartments();
                 case 'View Employee Roles':
-                    return viewRole();
+                    return viewExistingRoles();
                 case 'Add Employee':
-                    return addEmployee();
+                    return addNewEmployee();
                 case 'Add Departments':
                     return addDepartment()
                 case 'Add Employee Role':
-                    return addRole();
+                    return createNewRole();
                 // case '':
                 //     return
                 // case '':
@@ -52,21 +53,292 @@ function home() {
 }
 
 
-function viewEmployee() {
+
+
+async function viewEmployees() {
     console.log('\n--------------------- VIEW EMPLOYEES ---------------------')
+    const employees = await getAllEmployees()
+    console.table(employees)
     connection.query("SELECT * FROM employee", (err, results) => {
         if (err) throw err;
-        console.table(results)
-        home()
+        inquirer
+            .prompt([
+                {
+                    type: 'list',
+                    message: 'Choose an employee to edit data.',
+                    name: 'choice',
+                    choices: () => {
+                        let choices = []
+                        employees.forEach(x => {
+                            let name = `${x.first_name} ${x.last_name}`
+                            choices.push(name)
+                        });
+                        choices.push('<--Exit')
+                        return choices
+                    }
+                }
+            ]).then(({ choice }) => {
+                if (choice === '<--Exit') { home() }
+                else {
+                    let chosen
+                    employees.forEach(x => { if (choice === `${x.first_name} ${x.last_name}`) { chosen = x } });
+                    editEmployee(chosen)
+                }
+            })
+
     })
 }
-function addEmployee() {
-    console.log('\n---------------------- ADD EMPLOYEE ----------------------')
+
+async function addNewEmployee() {
+    console.log('\n---------------------- ADD EMPLOYEE ----------------------');
+
+    const employeeName = await addEmployeeName();
+    const employeeRole = await addEmployeeRole();
+    const employeeManager = await addEmployeeManager();
+    connection.query(
+        'INSERT INTO employee SET ?',
+        {
+            first_name: employeeName.first,
+            last_name: employeeName.last,
+            title_id: employeeRole.id,
+            title: employeeRole.title,
+            manager_id: employeeManager.id,
+            manager_name: employeeManager.name
+        },
+        (err) => {
+            if (err) throw err;
+            home()
+        }
+    );
+}
+
+async function editEmployee(xx) {
+    console.log('\n--------------------- EDIT EMPLOYEE ----------------------');
+    console.log(xx)
+
+    const roles = await getEmployeeRoles();
+    const editChoice = await promptEditEmployee();
+    const updateName = { first_name: '', last_name: '' }
+
+    if (editChoice === 'Edit Name') {
+        const enteredName = await addEmployeeName();
+        xx.first_name = enteredName.first;
+        xx.last_name = enteredName.last;
+        let query = `UPDATE employee SET first_name = '${xx.first_name}', last_name = '${xx.last_name}'  WHERE id = ${xx.id}`
+        console.log(query);
+        connection.query(query, (err, res) => {
+            if (err) { throw err }
+            else { editEmployee(xx) };
+        })
+    }
+    else if (editChoice === 'Edit Job Title') {
+        const enteredRole = await addEmployeeRole();
+        xx.title_id = enteredRole.id;
+        xx.title = enteredRole.title;
+        let query = `UPDATE employee SET title_id = '${xx.title_id}', title = '${xx.title}'  WHERE id = ${xx.id}`
+        console.log(query);
+        connection.query(query, (err, res) => {
+            if (err) { throw err }
+            else { editEmployee(xx) };
+        })
+    }
+    else if (editChoice === 'Change Manager') {
+        const enteredManager = await addEmployeeManager();
+        xx.manager_id = enteredManager.id
+        xx.manager_name = enteredManager.name
+        let query = `UPDATE employee SET manager_id = '${xx.manager_id}', manager_name = '${xx.manager_name}'  WHERE id = ${xx.id}`
+        console.log(query);
+        connection.query(query, (err, res) => {
+            if (err) { throw err }
+            else { editEmployee(xx) };
+        })
+    }
+    else if (editChoice === 'Delete Employee') {
+        inquirer.prompt([{
+            type: 'list',
+            message: `Are you sure? DELETE '${xx.first_name} ${xx.last_name}' ???`,
+            name: 'x',
+            choices: ['yes', 'NO']
+        }]).then(({ x }) => {
+            switch (x) {
+                case 'yes':
+                    let query = `DELETE FROM employee WHERE id = '${xx.id}'`
+                    console.log(query);
+                    connection.query(query, (err, res) => {
+                        if (err) { throw err }
+                        else { viewEmployees() };
+                    })
+                    break
+                default:
+                    return editEmployee(xx)
+            }
+        })
+    }
+}
+
+function promptEditEmployee() {
+    return new Promise((resolve, reject) => {
+        inquirer
+            .prompt([{
+                type: 'list',
+                message: 'What would you like to do?',
+                name: 'x',
+                choices: ['Edit Name', 'Edit Job Title', 'Change Manager', 'Delete Employee', '<-- Exit']
+            }]).then(({ x }) => {
+                if (x === '<--Exit') { home() } else { resolve(x) }
+            })
+    })
+}
+
+function addEmployeeName() {
+    console.log('employee name')
+    return new Promise((resolve, reject) => {
+        inquirer
+            .prompt([{
+                type: 'input',
+                message: 'Enter first name:',
+                name: 'first'
+            }, {
+                type: 'input',
+                message: 'Enter last name:',
+                name: 'last'
+            }]).then(x => {
+                let obj = {
+                    first: x.first,
+                    last: x.last
+                }
+                resolve(obj)
+            })
+    })
+}
+
+async function addEmployeeRole() {
+    const employeeRoles = await getEmployeeRoles();
+
+    return new Promise((resolve, reject) => {
+        inquirer
+            .prompt([{
+                type: 'list',
+                message: 'Select a role: ',
+                name: 'selection',
+                choices: () => {
+                    let choices = [];
+                    employeeRoles.forEach(x => { choices.push(x.title) });
+                    return choices;
+                }
+            }
+            ]).then(({ selection }) => {
+                let role
+                employeeRoles.forEach(z => { if (z.title === selection) { role = z } });
+                resolve(role)
+            })
+    })
+}
+
+async function addEmployeeManager() {
+    const managerList = await getManagers();
+    return new Promise((resolve, reject) => {
+        inquirer
+            .prompt([{
+                type: 'list',
+                message: 'Assign a Manager',
+                name: 'selection',
+                choices: () => {
+                    let choices = ['self']
+                    managerList.forEach(x => { choices.push(x.name) });
+                    return choices;
+                }
+            }]).then(({ selection }) => {
+                let manager
+                managerList.forEach(x => {
+                    if (x.name === selection) { manager = x }
+                });
+                if (selection === 'self') {
+                    manager = {
+                        id: 0,
+                        name: `self`
+                    }
+                }
+                resolve(manager)
+            })
+    })
+}
+
+function getAllEmployees() {
+    return new Promise((resolve, reject) => {
+        connection.query("SELECT * FROM employee", (err, results) => {
+            let employees = []
+            if (err) throw err;
+            // console.log(results)
+            results.forEach(x => { employees.push(x) });
+            resolve(employees)
+            reject('failed gathering employees')
+        })
+
+    })
+}
+
+
+function promptEditDepartments() {
+    return new Promise((resolve, reject) => {
+        inquirer
+            .prompt([{
+                type: 'list',
+                message: 'What would you like to do?',
+                choices: ['Change Department Name', 'Delete Department', '<--Exit'],
+                name: 'x'
+            }]).then(({ x }) => {
+                if (x === '<--Exit') { home() } else { resolve(x) }
+            })
+    })
+}
+
+function addDepartment() {
+    console.log('\n--------------------- ADD DEPARTMENT ---------------------')
+    inquirer
+        .prompt([
+            {
+                type: 'input',
+                message: 'Enter a department name: ',
+                name: 'departmentName'
+            }
+        ]).then(({ departmentName }) => {
+            connection.query(
+                'INSERT INTO department SET ?',
+                {
+                    name: departmentName
+                },
+                function (err) {
+                    if (err) throw err;
+                    console.log('\nDepartment created successfully!')
+                    home()
+                });
+        })
+}
+
+async function viewDepartments() {
+    console.log('\n-------------------- VIEW DEPARTMENTS --------------------')
+
+    const departments = await getDepartments();
+    console.table(departments)
     home()
 }
 
+function getDepartments() {
+    return new Promise((resolve, reject) => {
+        connection.query("SELECT * FROM department", (err, results) => {
+            if (err) { reject('failed to get departments') };
+            resolve(results)
+        })
+    })
+}
 
-function addRole() {
+
+
+
+
+
+function createNewRole() {
     console.log('\n--------------------- ADD ROLE ------------------------')
     connection.query("SELECT * FROM department", (err, results) => {
         if (err) throw err;
@@ -113,45 +385,39 @@ function addRole() {
             })
     });
 }
-function viewRole() {
-    console.log('\n----------------------- VIEW ROLES -----------------------')
-    connection.query("SELECT * FROM employeeRole", (err, results) => {
-        if (err) throw err;
-        console.table(results)
-        home()
-    })
-}
 
-
-function addDepartment() {
-    console.log('\n--------------------- ADD DEPARTMENT ---------------------')
-    inquirer
-        .prompt([
-            {
-                type: 'input',
-                message: 'Enter a department name: ',
-                name: 'departmentName'
-            }
-        ]).then(({ departmentName }) => {
-            connection.query(
-                'INSERT INTO department SET ?',
-                {
-                    name: departmentName
-                },
-                function (err) {
-                    if (err) throw err;
-                    console.log('\nDepartment created successfully!')
-                    home()
-                });
+function getEmployeeRoles() {
+    return new Promise((resolve, reject) => {
+        connection.query('SELECT * FROM employeeRole', (err, results) => {
+            let title = []
+            // console.log('test')
+            if (err) throw err;
+            results.forEach(x => {
+                title.push(x)
+            });
+            // console.log(title)
+            resolve(title)
+            // reject('failed gathering employee roles')
         })
-}
-function viewDepartment() {
-    console.log('\n-------------------- VIEW DEPARTMENTS --------------------')
-    connection.query("SELECT * FROM department", (err, results) => {
-        if (err) throw err;
-        console.table(results)
-        home()
     })
 }
 
-
+function getManagers() {
+    return new Promise((resolve, reject) => {
+        connection.query('SELECT id, first_name, last_name FROM employee WHERE title_id = 1', (err, results) => {
+            let managers = []
+            if (err) throw err;
+            // console.log(results)
+            for (let i = 0; i < results.length; i++) {
+                let x = results
+                let obj = {
+                    id: x[i].id,
+                    name: `${x[i].first_name} ${x[i].last_name}`
+                }
+                managers.push(obj)
+            }
+            resolve(managers)
+            // reject('failed gathering employee managers')
+        })
+    })
+}
