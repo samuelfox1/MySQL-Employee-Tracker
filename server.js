@@ -38,7 +38,7 @@ function home() {
                 case 'Add Employee':
                     return addNewEmployee();
                 case 'Add Departments':
-                    return addDepartment()
+                    return addNewDepartment()
                 case 'Add Employee Role':
                     return createNewRole();
                 // case '':
@@ -57,36 +57,34 @@ function home() {
 
 async function viewEmployees() {
     console.log('\n--------------------- VIEW EMPLOYEES ---------------------')
+
     const employees = await getAllEmployees()
     console.table(employees)
-    connection.query("SELECT * FROM employee", (err, results) => {
-        if (err) throw err;
-        inquirer
-            .prompt([
-                {
-                    type: 'list',
-                    message: 'Choose an employee to edit data.',
-                    name: 'choice',
-                    choices: () => {
-                        let choices = []
-                        employees.forEach(x => {
-                            let name = `${x.first_name} ${x.last_name}`
-                            choices.push(name)
-                        });
-                        choices.push('<--Exit')
-                        return choices
-                    }
-                }
-            ]).then(({ choice }) => {
-                if (choice === '<--Exit') { home() }
-                else {
-                    let chosen
-                    employees.forEach(x => { if (choice === `${x.first_name} ${x.last_name}`) { chosen = x } });
-                    editEmployee(chosen)
-                }
-            })
 
-    })
+    inquirer
+        .prompt([
+            {
+                type: 'list',
+                message: 'Choose an employee to edit data.',
+                name: 'choice',
+                choices: () => {
+                    let choices = []
+                    employees.forEach(x => {
+                        let name = `${x.first_name} ${x.last_name}`
+                        choices.push(name)
+                    });
+                    choices.push('<--Exit')
+                    return choices
+                }
+            }
+        ]).then(({ choice }) => {
+            if (choice === '<--Exit') { home() }
+            else {
+                let match
+                employees.forEach(x => { if (choice === `${x.first_name} ${x.last_name}`) { match = x } });
+                editEmployee(match)
+            }
+        })
 }
 
 async function addNewEmployee() {
@@ -116,14 +114,12 @@ async function editEmployee(xx) {
     console.log('\n--------------------- EDIT EMPLOYEE ----------------------');
     console.log(xx)
 
-    const roles = await getEmployeeRoles();
-    const editChoice = await promptEditEmployee();
-    const updateName = { first_name: '', last_name: '' }
+    const editEmployeeChoice = await promptEditEmployee();
 
-    if (editChoice === 'Edit Name') {
-        const enteredName = await addEmployeeName();
-        xx.first_name = enteredName.first;
-        xx.last_name = enteredName.last;
+    if (editEmployeeChoice === 'Edit Name') {
+        const enteredEmployeeName = await addEmployeeName();
+        xx.first_name = enteredEmployeeName.first;
+        xx.last_name = enteredEmployeeName.last;
         let query = `UPDATE employee SET first_name = '${xx.first_name}', last_name = '${xx.last_name}'  WHERE id = ${xx.id}`
         console.log(query);
         connection.query(query, (err, res) => {
@@ -131,7 +127,7 @@ async function editEmployee(xx) {
             else { editEmployee(xx) };
         })
     }
-    else if (editChoice === 'Edit Job Title') {
+    else if (editEmployeeChoice === 'Edit Job Title') {
         const enteredRole = await addEmployeeRole();
         xx.title_id = enteredRole.id;
         xx.title = enteredRole.title;
@@ -142,7 +138,7 @@ async function editEmployee(xx) {
             else { editEmployee(xx) };
         })
     }
-    else if (editChoice === 'Change Manager') {
+    else if (editEmployeeChoice === 'Change Manager') {
         const enteredManager = await addEmployeeManager();
         xx.manager_id = enteredManager.id
         xx.manager_name = enteredManager.name
@@ -153,7 +149,7 @@ async function editEmployee(xx) {
             else { editEmployee(xx) };
         })
     }
-    else if (editChoice === 'Delete Employee') {
+    else if (editEmployeeChoice === 'Delete Employee') {
         inquirer.prompt([{
             type: 'list',
             message: `Are you sure? DELETE '${xx.first_name} ${xx.last_name}' ???`,
@@ -163,7 +159,6 @@ async function editEmployee(xx) {
             switch (x) {
                 case 'yes':
                     let query = `DELETE FROM employee WHERE id = '${xx.id}'`
-                    console.log(query);
                     connection.query(query, (err, res) => {
                         if (err) { throw err }
                         else { viewEmployees() };
@@ -279,6 +274,96 @@ function getAllEmployees() {
 }
 
 
+
+
+async function viewDepartments() {
+    console.log('\n-------------------- VIEW DEPARTMENTS --------------------')
+
+    const departments = await getDepartments();
+    console.table(departments)
+    inquirer
+        .prompt([{
+            type: 'list',
+            message: 'Choose a department to edit data',
+            name: 'choice',
+            choices: () => {
+                let choices = []
+                departments.forEach(x => {
+                    choices.push(x.name)
+                });
+                choices.push('<--Exit')
+                return choices
+            }
+        }]).then(({ choice }) => {
+            if (choice === '<--Exit') { home() }
+            else {
+                let match
+                departments.forEach(x => { if (x.name === choice) { match = x } });
+                editDepartment(match)
+            }
+        })
+}
+
+async function editDepartment(xx) {
+    console.log('\n-------------------- EDIT DEPARTMENTS --------------------')
+
+    const editDepartmentChoice = await promptEditDepartments();
+
+    if (editDepartmentChoice === 'Change Department Name') {
+        const enteredDepartmentName = await addDepartmentName()
+        xx.name = enteredDepartmentName
+        console.log(xx)
+        let query = `UPDATE department SET name = '${xx.name}' WHERE id = ${xx.id}`
+        connection.query(query, (err, res) => {
+            if (err) { throw err }
+            else { editDepartment(xx) };
+        })
+    }
+    else if (editDepartmentChoice === 'Delete Department') {
+        inquirer.prompt([{
+            type: 'list',
+            message: `Are you sure? DELETE '${xx.name}' ???`,
+            name: 'x',
+            choices: ['yes', 'NO']
+        }]).then(({ x }) => {
+            switch (x) {
+                case 'yes':
+                    let query = `DELETE FROM department WHERE id = '${xx.id}'`
+                    connection.query(query, (err, res) => {
+                        if (err) { throw err }
+                        else { viewDepartments() };
+                    })
+                    break
+                default:
+                    return editDepartment(xx)
+            }
+        })
+    }
+}
+
+function addDepartmentName() {
+    return new Promise((resolve, reject) => {
+        inquirer
+            .prompt([{
+                type: 'input',
+                message: 'Enter Department name:',
+                name: 'x'
+            }]).then(({ x }) => { resolve(x) })
+    })
+}
+
+async function addNewDepartment() {
+    console.log('\n--------------------- ADD DEPARTMENT ---------------------')
+
+    const newDepartmentName = await addDepartmentName()
+    let query = `INSERT INTO department SET name = '${newDepartmentName}'`
+    connection.query(query, (err, res) => {
+        if (err) { throw err }
+        else { home() }
+    });
+}
+
+
 function promptEditDepartments() {
     return new Promise((resolve, reject) => {
         inquirer
@@ -293,37 +378,6 @@ function promptEditDepartments() {
     })
 }
 
-function addDepartment() {
-    console.log('\n--------------------- ADD DEPARTMENT ---------------------')
-    inquirer
-        .prompt([
-            {
-                type: 'input',
-                message: 'Enter a department name: ',
-                name: 'departmentName'
-            }
-        ]).then(({ departmentName }) => {
-            connection.query(
-                'INSERT INTO department SET ?',
-                {
-                    name: departmentName
-                },
-                function (err) {
-                    if (err) throw err;
-                    console.log('\nDepartment created successfully!')
-                    home()
-                });
-        })
-}
-
-async function viewDepartments() {
-    console.log('\n-------------------- VIEW DEPARTMENTS --------------------')
-
-    const departments = await getDepartments();
-    console.table(departments)
-    home()
-}
-
 function getDepartments() {
     return new Promise((resolve, reject) => {
         connection.query("SELECT * FROM department", (err, results) => {
@@ -332,8 +386,6 @@ function getDepartments() {
         })
     })
 }
-
-
 
 
 
