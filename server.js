@@ -1,5 +1,6 @@
 const inquirer = require('inquirer')
 const mysql = require('mysql')
+// const cTable = require('console.table')
 
 
 // create the connection information for the sql database
@@ -52,8 +53,6 @@ function home() {
             }
         })
 }
-
-
 
 // __________________EMPLOYEE_FUNCTIONS___________________
 
