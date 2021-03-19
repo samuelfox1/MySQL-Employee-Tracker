@@ -29,7 +29,7 @@
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](https://www.contributor-covenant.org/)
 <br>
 
-![npm](https://img.shields.io/badge/-npm-CB3837?logo=NPM)![Git](https://img.shields.io/badge/-Git-F05032?logo=git&logoColor=white)![Command Line](https://img.shields.io/badge/-Command%20Line-4D4D4D?logo=windows%20terminal&logoColor=white)![VS Code](https://img.shields.io/badge/-VS%20Code-4D4D4D?logo=Visual%20Studio%20Code&logoColor=007ACC)![node.js](https://img.shields.io/badge/-Node.js-339933?logo=node.js&logoColor=white)![MySQL](https://img.shields.io/badge/-MySQL-4479A1?logo=MySQL&logoColor=white)
+![npm](https://img.shields.io/badge/-npm-CB3837?logo=NPM)![Git](https://img.shields.io/badge/-Git-F05032?logo=git&logoColor=white)![Command Line](https://img.shields.io/badge/-Command%20Line-4D4D4D?logo=windows%20terminal&logoColor=white)![VS Code](https://img.shields.io/badge/-VS%20Code-4D4D4D?logo=Visual%20Studio%20Code&logoColor=007ACC)![node.js](https://img.shields.io/badge/-Node.js-339933?logo=node.js&logoColor=white)![MySQL](https://img.shields.io/badge/-MySQL-4479A1?logo=MySQL&logoColor=white)![Sequelize ORM](https://img.shields.io/badge/-Sequelize%20ORM-4479A1)
 
 
 
